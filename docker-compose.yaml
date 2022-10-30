@@ -1,0 +1,28 @@
+version:  '3.9'
+
+services:
+  go_checklist:
+    container_name: go_checklist
+    build: .
+    ports:
+      - 8000:8000
+    depends_on:
+      mysql_checklist:
+        condition: service_healthy
+
+  mysql_checklist:
+    container_name: mysql_checklist
+    image: mysql:8.0
+    restart: on-failure
+    expose:
+      - "3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: checklist
+    volumes:
+      - ./db/user:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+
