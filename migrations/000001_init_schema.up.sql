@@ -1,0 +1,8 @@
+CREATE TABLE Tasks(
+    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    user_id INTEGER NOT NULL,
+    name VARCHAR(32) NOT NULL,
+    descr TEXT NOT NULL,
+    is_done BOOLEAN NOT NULL DEFAULT false,
+    created_at DATETIME NOT NULL
+);
