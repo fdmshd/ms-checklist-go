@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
 var ErrNoRecord = errors.New("models: no matching record found")
@@ -82,6 +83,24 @@ func (m *TaskModel) Add(t *Task) (int, error) {
 func (m *TaskModel) Update(t *Task) error {
 	stmt := `UPDATE Tasks SET name = ?, descr = ? WHERE id = ?`
 	res, err := m.DB.Exec(stmt, t.Name, t.Description, t.Id)
+	if err != nil {
+		return err
+	}
+	affectedNum, _ := res.RowsAffected()
+	if affectedNum == 0 {
+		return ErrNoRecord
+	}
+	return nil
+}
+
+func (m *TaskModel) UpdateFields(fields map[string]interface{}, id int) error {
+	stmt := "UPDATE Tasks SET "
+	for name, val := range fields {
+		stmt += fmt.Sprintf("%s=%v, ", name, val)
+	}
+	stmt = stmt[:len(stmt)-2] + " "
+	stmt += "WHERE id = ?"
+	res, err := m.DB.Exec(stmt, id)
 	if err != nil {
 		return err
 	}

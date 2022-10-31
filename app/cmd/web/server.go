@@ -29,6 +29,7 @@ func main() {
 	e.GET("/:user_id", h.GetAll)
 	e.POST("/", h.Create)
 	e.PUT("/:id", h.Update)
+	e.PATCH("/:id", h.Complete)
 	e.DELETE(":id", h.Delete)
 	e.Logger.Fatal(e.Start(":8000"))
 }

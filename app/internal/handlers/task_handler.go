@@ -62,7 +62,7 @@ func (h *TaskHandler) Create(c echo.Context) error {
 func (h *TaskHandler) Update(c echo.Context) error {
 	currUserID := userIDFromToken(c)
 	TaskId := c.Param("id")
-	id, err := h.checkUser(currUserID, TaskId)
+	oldTask, err := h.checkUser(currUserID, TaskId)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (h *TaskHandler) Update(c echo.Context) error {
 	if err = c.Bind(t); err != nil {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
-	t.Id = id
+	t.Id = oldTask.Id
 	err = h.TaskModel.Update(t)
 	if err != nil {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
@@ -81,35 +81,53 @@ func (h *TaskHandler) Update(c echo.Context) error {
 func (h *TaskHandler) Delete(c echo.Context) error {
 	currUserID := userIDFromToken(c)
 	TaskId := c.Param("id")
-	id, err := h.checkUser(currUserID, TaskId)
+	task, err := h.checkUser(currUserID, TaskId)
 	if err != nil {
 		return err
 	}
-	err = h.TaskModel.Delete(id)
+	err = h.TaskModel.Delete(task.Id)
 	if err != nil {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 	return c.JSON(http.StatusOK, "deleted")
 }
 
-func (h *TaskHandler) checkUser(currUserID, TaskId string) (int, error) {
+func (h *TaskHandler) Complete(c echo.Context) error {
+	currUserID := userIDFromToken(c)
+	TaskId := c.Param("id")
+	task, err := h.checkUser(currUserID, TaskId)
+	if err != nil {
+		return err
+	}
+	err = h.TaskModel.UpdateFields(map[string]interface{}{"is_done": !task.IsDone}, task.Id)
+	if err != nil {
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
+	}
+	if !task.IsDone {
+		return c.JSON(http.StatusOK, "completed")
+	}
+	return c.JSON(http.StatusOK, "uncompleted")
+}
+
+func (h *TaskHandler) checkUser(currUserID, TaskId string) (*models.Task, error) {
 
 	id, err := strconv.Atoi(TaskId)
 	if err != nil {
 		panic("something went wrong with id")
 	}
-	oldTask, err := h.TaskModel.Get(id)
+	task, err := h.TaskModel.Get(id)
 	if err != nil {
-		return 0, &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
+		return nil, &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 	userID, err := strconv.Atoi(currUserID)
 	if err != nil {
 		panic("something went wrong with user_id")
 	}
-	if userID != oldTask.UserID {
-		return 0, &echo.HTTPError{Code: http.StatusForbidden, Message: "forbidden"}
+	if userID != task.UserID {
+		return nil, &echo.HTTPError{Code: http.StatusForbidden, Message: "forbidden"}
 	}
-	return id, nil
+	task.Id = id
+	return task, nil
 }
 
 func userIDFromToken(c echo.Context) string {
