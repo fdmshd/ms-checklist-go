@@ -15,6 +15,7 @@ import (
 func main() {
 	port := flag.String("port", ":8000", "HTTP port")
 	dsn := flag.String("dsn", "root:password@tcp(mysql_checklist:3306)/checklist", "MySQL data source name")
+	jwtKey := flag.String("key", "secret", "jwt key")
 	flag.Parse()
 	e := echo.New()
 	e.Use(middleware.Logger())
@@ -27,7 +28,7 @@ func main() {
 
 	h := handlers.TaskHandler{TaskModel: models.TaskModel{DB: db}}
 	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey: []byte(handlers.SigningKey),
+		SigningKey: []byte(*jwtKey),
 	}))
 	e.GET("/:user_id", h.GetAll)
 	e.POST("/", h.Create)

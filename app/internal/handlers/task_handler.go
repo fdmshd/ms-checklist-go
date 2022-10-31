@@ -10,8 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const SigningKey = "ashdfjasdj"
-
 type TaskHandler struct {
 	TaskModel models.TaskModel
 }

@@ -9,7 +9,7 @@ services:
     depends_on:
       mysql_checklist:
         condition: service_healthy
-    entrypoint: ["/bin/server" ,"-port=:8000" ,"-dsn=root:password@tcp(mysql_checklist:3306)/checklist"]
+    entrypoint: ["/bin/server" ,"-port=:8000" ,"-dsn=root:password@tcp(mysql_checklist:3306)/checklist","-key=your_jwt_key"]
 
   mysql_checklist:
     container_name: mysql_checklist
