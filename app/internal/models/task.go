@@ -21,7 +21,7 @@ type TaskModel struct {
 }
 
 func (m *TaskModel) Get(id int) (*Task, error) {
-	stmt := `SELECT id,user_id,name,descr,is_done,created_at FROM tasks WHERE id =?`
+	stmt := `SELECT id,user_id,name,descr,is_done,created_at FROM Tasks WHERE id =?`
 	row := m.DB.QueryRow(stmt, id)
 	task := new(Task)
 	err := row.Scan(&task.Id, &task.UserID, &task.Name, &task.Description, &task.IsDone, &task.CreatedAt)
@@ -37,7 +37,7 @@ func (m *TaskModel) Get(id int) (*Task, error) {
 
 func (m *TaskModel) GetByUser(userID int) ([]*Task, error) {
 	stmt := `SELECT id,user_id,name,descr,is_done,created_at FROM Tasks WHERE user_id = ?`
-	rows, err := m.DB.Query(stmt)
+	rows, err := m.DB.Query(stmt, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (m *TaskModel) Add(t *Task) (int, error) {
 }
 
 func (m *TaskModel) Update(t *Task) error {
-	stmt := `UPDATE Tasks SET name = ?, descr = ?WHERE id = ?`
+	stmt := `UPDATE Tasks SET name = ?, descr = ? WHERE id = ?`
 	res, err := m.DB.Exec(stmt, t.Name, t.Description, t.Id)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (m *TaskModel) Delete(id int) error {
 	}
 	affectedNum, _ := res.RowsAffected()
 	if affectedNum == 0 {
-		return err
+		return ErrNoRecord
 	}
 	return nil
 }

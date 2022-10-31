@@ -24,7 +24,7 @@ func (h *TaskHandler) GetAll(c echo.Context) error {
 	requestedID := c.Param("user_id")
 	requester := userIDFromToken(c)
 
-	if requestedID != requester || !isAdminFromToken(c) {
+	if !(requestedID == requester || isAdminFromToken(c)) {
 		return &echo.HTTPError{Code: http.StatusForbidden, Message: "forbidden"}
 	}
 	id, err := strconv.Atoi(requestedID)
@@ -33,7 +33,7 @@ func (h *TaskHandler) GetAll(c echo.Context) error {
 	}
 	tasks, err := h.TaskModel.GetByUser(id)
 	if err != nil {
-		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err}
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 
 	return c.JSON(http.StatusOK, tasks)
@@ -47,31 +47,33 @@ func (h *TaskHandler) Create(c echo.Context) error {
 	}
 	task := new(models.Task)
 	if err := c.Bind(task); err != nil {
-		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err}
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
-	task.Id = id
+	task.UserID = id
 	task.CreatedAt = time.Now().Format("2006-01-02T15:04:05")
-	_, err = h.TaskModel.Add(task)
+	taskID, err := h.TaskModel.Add(task)
 	if err != nil {
-		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err}
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
+	task.Id = taskID
 	return c.JSON(http.StatusCreated, task)
 }
 
 func (h *TaskHandler) Update(c echo.Context) error {
 	currUserID := userIDFromToken(c)
 	TaskId := c.Param("id")
-	_, err := h.checkUser(currUserID, TaskId)
+	id, err := h.checkUser(currUserID, TaskId)
 	if err != nil {
 		return err
 	}
 	t := new(models.Task)
 	if err = c.Bind(t); err != nil {
-		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err}
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
+	t.Id = id
 	err = h.TaskModel.Update(t)
 	if err != nil {
-		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err}
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 	return c.JSON(http.StatusOK, "updated")
 }
@@ -85,7 +87,7 @@ func (h *TaskHandler) Delete(c echo.Context) error {
 	}
 	err = h.TaskModel.Delete(id)
 	if err != nil {
-		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err}
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 	return c.JSON(http.StatusOK, "deleted")
 }
@@ -98,7 +100,7 @@ func (h *TaskHandler) checkUser(currUserID, TaskId string) (int, error) {
 	}
 	oldTask, err := h.TaskModel.Get(id)
 	if err != nil {
-		return 0, &echo.HTTPError{Code: http.StatusBadRequest, Message: err}
+		return 0, &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
 	userID, err := strconv.Atoi(currUserID)
 	if err != nil {
