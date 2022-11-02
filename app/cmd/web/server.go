@@ -27,14 +27,15 @@ func main() {
 	defer db.Close()
 
 	h := handlers.TaskHandler{TaskModel: models.TaskModel{DB: db}}
-	e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+	tasksGroup := e.Group("/tasks")
+	tasksGroup.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey: []byte(*jwtKey),
 	}))
-	e.GET("/:user_id", h.GetAll)
-	e.POST("/", h.Create)
-	e.PUT("/:id", h.Update)
-	e.PATCH("/:id", h.Complete)
-	e.DELETE("/:id", h.Delete)
+	tasksGroup.GET("/:user_id", h.GetAll)
+	tasksGroup.POST("/", h.Create)
+	tasksGroup.PUT("/:id", h.Update)
+	tasksGroup.PATCH("/:id", h.Complete)
+	tasksGroup.DELETE("/:id", h.Delete)
 	e.Logger.Fatal(e.Start(*port))
 }
 
