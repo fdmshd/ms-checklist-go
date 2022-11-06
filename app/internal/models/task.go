@@ -123,3 +123,16 @@ func (m *TaskModel) Delete(id int) error {
 	}
 	return nil
 }
+
+func (m *TaskModel) DeleteByUser(userID int) error {
+	stmt := `DELETE FROM Tasks WHERE user_id = ?`
+	res, err := m.DB.Exec(stmt, userID)
+	if err != nil {
+		return err
+	}
+	affectedNum, _ := res.RowsAffected()
+	if affectedNum == 0 {
+		return ErrNoRecord
+	}
+	return nil
+}

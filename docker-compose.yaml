@@ -3,13 +3,18 @@ version:  '3.9'
 services:
   go_checklist:
     container_name: go_checklist
-    build: .
+    build: 
+      dockerfile: dockerfile
     ports:
       - 8000:8000
     depends_on:
       mysql_checklist:
         condition: service_healthy
+      rabbitmq_checklist:
+        condition: service_healthy
     entrypoint: ["/bin/server" ,"-port=:8000" ,"-dsn=root:password@tcp(mysql_checklist:3306)/checklist","-key=your_jwt_key"]
+    networks:
+      - backend
 
   mysql_checklist:
     container_name: mysql_checklist
@@ -26,4 +31,45 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 5s
       retries: 10
+    networks:
+      - backend
 
+  rabbitmq_checklist:
+    image: rabbitmq:3.9.10-management-alpine
+    container_name: rabbitmq_checklist
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    volumes:
+        - ../app:/var/www/html
+        - ./config/rabbitmq:/etc/rabbitmq/conf.d
+    restart: on-failure
+    networks:
+      - backend
+
+  consumer_checklist:
+    container_name: consumer_checklist
+    build: 
+      dockerfile: consumer
+    expose:
+      - "9000"
+    depends_on:
+      mysql_checklist:
+        condition: service_healthy
+      rabbitmq_checklist:
+        condition: service_healthy
+    entrypoint: ["/bin/consumer" ,"-dsn=root:password@tcp(mysql_checklist:3306)/checklist"]
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: tasks_ms
