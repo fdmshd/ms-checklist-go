@@ -3,6 +3,7 @@ package main
 import (
 	"checklist/internal/handlers"
 	"checklist/internal/models"
+	"checklist/internal/utils"
 	"database/sql"
 	"flag"
 
@@ -18,6 +19,7 @@ func main() {
 	jwtKey := flag.String("key", "secret", "jwt key")
 	flag.Parse()
 	e := echo.New()
+	e.Validator = utils.NewValidator()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	db, err := openDB(*dsn)

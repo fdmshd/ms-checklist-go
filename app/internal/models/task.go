@@ -10,11 +10,11 @@ var ErrNoRecord = errors.New("models: no matching record found")
 
 type Task struct {
 	Id          int    `json:"id"`
-	UserID      int    `json:"user_id,omitempty"`
-	Name        string `json:"name"`
-	Description string `json:"descr"`
+	UserID      int    `json:"user_id,omitempty" validate:"required,gt=0"`
+	Name        string `json:"name" validate:"required,min=1,max=32"`
+	Description string `json:"descr" validate:"required,min=1,max=255"`
 	IsDone      bool   `json:"is_done"`
-	CreatedAt   string `json:"created_at"`
+	CreatedAt   string `json:"created_at" validate:"datetime=2006-01-02T15:04:05"`
 }
 
 type TaskModel struct {

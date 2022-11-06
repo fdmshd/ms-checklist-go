@@ -49,6 +49,12 @@ func (h *TaskHandler) Create(c echo.Context) error {
 	}
 	task.UserID = id
 	task.CreatedAt = time.Now().Format("2006-01-02T15:04:05")
+
+	err = c.Validate(task)
+	if err != nil {
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
+	}
+
 	taskID, err := h.TaskModel.Add(task)
 	if err != nil {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
@@ -60,16 +66,21 @@ func (h *TaskHandler) Create(c echo.Context) error {
 func (h *TaskHandler) Update(c echo.Context) error {
 	currUserID := userIDFromToken(c)
 	TaskId := c.Param("id")
-	oldTask, err := h.checkUser(currUserID, TaskId)
+	oldTask, err := h.getTask(currUserID, TaskId)
 	if err != nil {
 		return err
 	}
-	t := new(models.Task)
-	if err = c.Bind(t); err != nil {
+	task := new(models.Task)
+	if err = c.Bind(task); err != nil {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
-	t.Id = oldTask.Id
-	err = h.TaskModel.Update(t)
+	task.Id = oldTask.Id
+	err = c.Validate(task)
+	if err != nil {
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
+	}
+
+	err = h.TaskModel.Update(task)
 	if err != nil {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
 	}
@@ -79,7 +90,7 @@ func (h *TaskHandler) Update(c echo.Context) error {
 func (h *TaskHandler) Delete(c echo.Context) error {
 	currUserID := userIDFromToken(c)
 	TaskId := c.Param("id")
-	task, err := h.checkUser(currUserID, TaskId)
+	task, err := h.getTask(currUserID, TaskId)
 	if err != nil {
 		return err
 	}
@@ -93,7 +104,7 @@ func (h *TaskHandler) Delete(c echo.Context) error {
 func (h *TaskHandler) Complete(c echo.Context) error {
 	currUserID := userIDFromToken(c)
 	TaskId := c.Param("id")
-	task, err := h.checkUser(currUserID, TaskId)
+	task, err := h.getTask(currUserID, TaskId)
 	if err != nil {
 		return err
 	}
@@ -107,7 +118,7 @@ func (h *TaskHandler) Complete(c echo.Context) error {
 	return c.JSON(http.StatusOK, "uncompleted")
 }
 
-func (h *TaskHandler) checkUser(currUserID, TaskId string) (*models.Task, error) {
+func (h *TaskHandler) getTask(currUserID, TaskId string) (*models.Task, error) {
 
 	id, err := strconv.Atoi(TaskId)
 	if err != nil {
